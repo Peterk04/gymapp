@@ -113,6 +113,51 @@ def list_sets(wid, eid):
     return jsonify(ss)
 
 
+#delete endpoints
+@app.delete("/workouts/<int:wid>")
+def delete_workout(wid):
+    if wid not in workouts:
+        abort(404, descriptions="not found")
+
+#delete child exercises and sets
+    to_delete_ex = [eid for eid, e in exercises.items() if e["workout_id"] == wid]
+    for eid in to_delete_ex:
+        to_delete_sets = [sid for sid, s in sets.items() if s["exercise_id"] == eid]
+        for sid in to_delete_sets:
+            del sets[sid]
+        del exercises[eid]
+
+    del workouts[wid]
+    return ("", 204)
+
+@app.delete("/workouts/<int:wid>/exercises/<int:eid>")
+def delete_exercise(wid, eid):
+    exercise = exercises.get(eid)
+    if not exercise or exercise["workout_id"] != wid:
+        abort(404, description="not found")
+
+#delete child exercises
+    to_delete_sets = [sid for sid, s in sets.items() if s["exercise_id"] == eid]
+    for sid in to_delete_sets:
+        del sets[sid]
+
+    del exercises[eid]
+    return ("", 204)
+
+@app.delete("/workouts/<int:wid>/exercises/<int:eid>/sets/<int:sid>")
+def delete_set(wid, eid, sid):
+    exercise = exercises.get(eid)
+    if not exercise or exercise["workout_id"] != wid:
+        abort(404, description="not found")
+
+    s = sets.get(sid)
+    if not s or s["exercise_id"] != eid:
+        abort(404, description="not found")
+
+    del sets[sid]
+    return ("", 204)
+
+
 #error handler to keep json errors consisten
 @app.errorhandler(400)
 @app.errorhandler(404)
